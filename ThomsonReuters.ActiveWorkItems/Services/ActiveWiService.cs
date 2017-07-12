@@ -19,24 +19,18 @@ namespace ThomsonReuters.Services.ActiveWorkItems
     [ComVisible(true)]
     public interface IActiveWiService
     {
-        ObservableCollection<ActiveWorkItem> GetActiveWorkItems(string searchTerm);
+        ObservableCollection<ActiveWorkItem> GetActiveWorkItems(string searchTerm, IPendingChangesExt pc,  ITeamFoundationContext context);
     }
         
     public class ActiveWiService : TeamExplorerBase, IActiveWiService, SActiveWiService
     {
-        public ObservableCollection<ActiveWorkItem> GetActiveWorkItems(string searchTerm)
-        {
-            var pc = GetService<IPendingChangesExt>();
-
-            if (pc == null)
-                return new ObservableCollection<ActiveWorkItem>();
-
+        public ObservableCollection<ActiveWorkItem> GetActiveWorkItems(string searchTerm, IPendingChangesExt pc, ITeamFoundationContext context)
+        {            
             var currentlyAssociatedWorkItems = pc.WorkItems;
 
             var workItems = new ObservableCollection<ActiveWorkItem>();
 
-            // Make the server call asynchronously to avoid blocking the UI            
-                ITeamFoundationContext context = this.CurrentContext;
+            // Make the server call asynchronously to avoid blocking the UI                            
             if (context != null && context.HasCollection && context.HasTeamProject)
             {
                 var vcs = context.TeamProjectCollection.GetService<VersionControlServer>();

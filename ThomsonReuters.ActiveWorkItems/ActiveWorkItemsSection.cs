@@ -1,4 +1,5 @@
-﻿using Microsoft.TeamFoundation.Controls;
+﻿using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Controls;
 using Microsoft.TeamFoundation.VersionControl.Controls.Extensibility;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TeamFoundation.WorkItemTracking;
@@ -132,7 +133,10 @@ namespace ThomsonReuters.ActiveWorkItems
         public async System.Threading.Tasks.Task RefreshAsync()
         {
             try
-            {                
+            {
+                var pc = GetService<IPendingChangesExt>();
+                var currentlyAssociatedWorkItems = pc.WorkItems;
+
                 if (this.IsBusy)
                     return;
 
@@ -140,26 +144,11 @@ namespace ThomsonReuters.ActiveWorkItems
                 this.IsBusy = true;
                 this.RecentWorkItems.Clear();
 
-                Microsoft.TeamFoundation.Controls.ITeamExplorer teamExplorer;
-
-                teamExplorer = GetService < Microsoft.TeamFoundation.Controls.ITeamExplorer>()
-                                   as Microsoft.TeamFoundation.Controls.ITeamExplorer;
-
-                if (teamExplorer.CurrentPage.GetId() != new Guid(Microsoft.TeamFoundation.Controls.TeamExplorerPageIds.PendingChanges))
-                    return;
-
-                var pc = GetService<IPendingChangesExt>();
-
-                if (pc == null)
-                    throw new Exception("please, confirm TeamFoundation.VersionControl dll version.");
-                
-                var currentlyAssociatedWorkItems = pc.WorkItems;
-
-                var workItemsService = Package.GetGlobalService(typeof(SActiveWiService)) as IActiveWiService;
+                var workItemsService = GetService<SActiveWiService>() as IActiveWiService;
                 var workItems = new ObservableCollection<ActiveWorkItem>();
 
                 if (workItemsService != null)
-                    workItems = workItemsService.GetActiveWorkItems(this.SearchTerm);                
+                    workItems = workItemsService.GetActiveWorkItems(this.SearchTerm, pc, GetService<ITeamFoundationContextManager>().CurrentContext);                
 
                 // Now back on the UI thread, update the bound collection and section title
                 this.RecentWorkItems = new ObservableCollection<ActiveWorkItem>(workItems.Take(5));
